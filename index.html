@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SpinPick</title>
+<meta property="og:title" content="SpinPick — Giveaway Wheel"/>
+<meta property="og:description" content="Weighted giveaway wheel for TikTok, YouTube, Instagram, Twitch & Kick."/>
+<meta name="theme-color" content="#FF6B6B"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#F7F8FC;--white:#FFFFFF;--text:#1A1A2E;--muted:#9B9BB4;--muted2:#C4C4D4;
+  --border:#E8E8F0;--border2:#D0D0E0;
+  --red:#FF6B6B;--orange:#FF9F43;--yellow:#FECA57;--green:#48DBAF;
+  --blue:#54A0FF;--purple:#A29BFE;--pink:#FD79A8;--teal:#00CEC9;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);--shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;overflow-x:hidden}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:420px 1fr;min-height:100vh}
+@media(max-width:900px){.app{grid-template-columns:1fr}}
+
+/* ── LEFT PANEL ── */
+.left{
+  background:var(--white);border-right:2px solid var(--border);
+  display:flex;flex-direction:column;height:100vh;overflow:hidden;
+}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:2px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:16px 8px;font-size:13px;font-weight:800;text-align:center;
+  cursor:pointer;color:var(--muted);border:none;background:none;
+  font-family:'Nunito',sans-serif;letter-spacing:.3px;transition:all .15s;
+  border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* Tab panels */
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* Add panel */
+.add-panel{padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+
+/* Platform row */
+.plat-row{display:flex;gap:6px;flex-wrap:wrap}
+.plat{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;
+  border:2px solid var(--border);background:var(--white);color:var(--muted);
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Nunito',sans-serif}
+.plat:hover{border-color:var(--border2);color:var(--text)}
+.plat.active{border-color:var(--red);background:#FFF0F0;color:var(--red)}
+.plat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Inputs */
+input,textarea{
+  width:100%;background:var(--bg);border:2px solid var(--border);
+  border-radius:14px;color:var(--text);font-family:'Nunito',sans-serif;
+  font-size:13px;font-weight:600;outline:none;transition:border-color .2s;
+}
+input{height:44px;padding:0 14px}
+input:focus,textarea:focus{border-color:var(--red)}
+input::placeholder,textarea::placeholder{color:var(--muted);font-weight:600}
+textarea{padding:12px 14px;resize:vertical;min-height:90px;line-height:1.6}
+
+.label{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+
+.btn{height:44px;padding:0 18px;border-radius:14px;font-size:14px;font-weight:800;
+  font-family:'Nunito',sans-serif;cursor:pointer;border:none;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  white-space:nowrap;transition:all .15s;letter-spacing:.2px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--red);color:#fff;width:100%}
+.btn-primary:hover:not(:disabled){background:#e85d5d}
+.btn-ghost{background:var(--bg);color:var(--muted);border:2px solid var(--border)}
+.btn-ghost:hover{background:var(--border);color:var(--text)}
+.status{font-size:12px;font-weight:700;min-height:16px;color:var(--muted)}
+.status.ok{color:var(--green)}.status.err{color:var(--red)}.status.loading{color:var(--blue)}
+
+/* Divider */
+.or{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:1px}
+.or::before,.or::after{content:'';flex:1;height:2px;background:var(--border)}
+
+/* ── ENTRIES LIST ── */
+.entries-panel{display:flex;flex-direction:column;overflow:hidden;flex:1}
+.entries-search{padding:12px 16px;border-bottom:2px solid var(--border);flex-shrink:0}
+.entries-search input{background:var(--bg)}
+.entries-list{flex:1;overflow-y:auto;padding:8px}
+.entry{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:14px;margin-bottom:4px;border:2px solid transparent;
+  transition:all .15s;cursor:default;
+}
+.entry:hover{background:var(--bg)}
+.entry.muted-entry{opacity:.45}
+.entry-swatch{width:14px;height:14px;border-radius:5px;flex-shrink:0;transition:opacity .15s}
+.entry-name{flex:1;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry.muted-entry .entry-name{text-decoration:line-through;color:var(--muted)}
+.entry-weight{
+  font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;
+  background:var(--bg);color:var(--muted);border:2px solid var(--border);
+  white-space:nowrap;
+}
+.entry-weight.w2{background:#FFF3E0;color:#E65100;border-color:#FFB74D}
+.entry-weight.w3{background:#FCE4EC;color:#C62828;border-color:#EF9A9A}
+.entry-acts{display:flex;gap:3px}
+.iBtn{
+  width:28px;height:28px;border-radius:9px;border:2px solid var(--border);
+  background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--muted);transition:all .15s;font-family:'Nunito',sans-serif;
+}
+.iBtn:hover{background:var(--bg);color:var(--text);border-color:var(--border2)}
+.iBtn.mute-btn.active{background:#FFF0F0;color:var(--red);border-color:#FFBBBB}
+.iBtn.del:hover{background:#FFF0F0;color:var(--red);border-color:#FFBBBB}
+
+/* Entries footer */
+.entries-footer{
+  padding:12px 16px;border-top:2px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.e-count{font-size:12px;font-weight:800;color:var(--muted)}
+.e-count span{color:var(--text)}
+.footer-btns{display:flex;gap:6px}
+.sm-btn{height:30px;padding:0 12px;border-radius:10px;font-size:11px;font-weight:800;
+  border:2px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;transition:all .15s}
+.sm-btn:hover{background:var(--bg);color:var(--text)}
+.sm-btn.danger:hover{background:#FFF0F0;color:var(--red);border-color:#FFBBBB}
+
+/* ── HISTORY PANEL ── */
+.history-panel{display:flex;flex-direction:column;overflow:hidden;flex:1}
+.hist-list{flex:1;overflow-y:auto;padding:12px}
+.hist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:8px;color:var(--muted);font-size:14px;font-weight:700;text-align:center;padding:24px}
+.hist-empty .big{font-size:48px}
+.hist-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--white);border:2px solid var(--border);border-radius:14px;
+  margin-bottom:8px;
+}
+.hist-num{width:28px;height:28px;border-radius:50%;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:900;color:var(--muted);flex-shrink:0}
+.hist-num.gold{background:#FFF8E1;color:#F57F17}
+.hist-info{flex:1;min-width:0}
+.hist-name{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-meta{font-size:11px;font-weight:700;color:var(--muted);margin-top:1px}
+.hist-swatch{width:10px;height:36px;border-radius:5px;flex-shrink:0}
+.hist-clear{margin:0 12px 12px;height:36px;border-radius:10px;border:2px solid var(--border);
+  background:none;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer;
+  font-family:'Nunito',sans-serif;transition:all .15s;width:calc(100% - 24px)}
+.hist-clear:hover{background:#FFF0F0;color:var(--red);border-color:#FFBBBB}
+
+/* ── SAVES MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:24px;padding:24px;width:440px;
+  max-width:calc(100vw - 32px);max-height:80vh;display:flex;flex-direction:column;gap:14px;
+  box-shadow:var(--shadow-lg)}
+.modal-head{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:18px;font-weight:900}
+.save-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.save-item{display:flex;align-items:center;gap:10px;padding:12px 14px;
+  background:var(--bg);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:all .15s}
+.save-item:hover{border-color:var(--red);background:#FFF5F5}
+.save-info{flex:1;min-width:0}
+.save-name2{font-size:13px;font-weight:800}
+.save-meta2{font-size:11px;font-weight:700;color:var(--muted);margin-top:1px}
+.modal-empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:700}
+
+/* ── RIGHT PANEL — WHEEL ── */
+.right{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;gap:20px;background:var(--bg);
+}
+.wheel-outer{
+  position:relative;
+  width:min(460px,calc(100vw - 48px));
+  aspect-ratio:1;
+  filter:drop-shadow(0 12px 40px rgba(0,0,0,.15));
+}
+canvas{display:block;width:100%;height:100%}
+
+/* Pointer — pointing LEFT into wheel */
+.ptr{position:absolute;top:50%;right:-28px;transform:translateY(-50%);pointer-events:none}
+
+/* Winner display */
+.winner-area{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  width:min(460px,calc(100vw - 48px));
+}
+.winner-box{
+  width:100%;padding:16px 20px;border-radius:20px;background:var(--white);
+  border:3px solid var(--border);text-align:center;transition:all .3s;
+  box-shadow:var(--shadow);
+}
+.winner-box.lit{border-color:var(--red);box-shadow:0 4px 24px rgba(255,107,107,.2)}
+.w-label{font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.w-name{font-size:22px;font-weight:900;color:var(--text)}
+.w-name.placeholder{color:var(--muted2);font-size:16px;font-weight:700}
+.winner-box.lit .w-name{color:var(--red)}
+
+/* Spin button */
+.spin-btn{
+  width:100%;height:58px;border-radius:18px;border:none;
+  background:var(--red);color:#fff;
+  font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;
+  letter-spacing:.5px;cursor:pointer;transition:all .2s;
+  box-shadow:0 4px 16px rgba(255,107,107,.4);
+}
+.spin-btn:hover:not(:disabled){background:#e85d5d;transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,107,107,.5)}
+.spin-btn:active:not(:disabled){transform:translateY(0)}
+.spin-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Bottom action row */
+.action-row{display:flex;gap:8px;width:100%}
+.action-row .btn-ghost{flex:1;height:40px;font-size:13px;border-radius:12px}
+
+/* Saves btn in header */
+.saves-trigger{
+  font-size:12px;font-weight:800;padding:7px 16px;border-radius:20px;
+  border:2px solid var(--border);background:var(--white);color:var(--muted);
+  cursor:pointer;font-family:'Nunito',sans-serif;transition:all .15s;
+}
+.saves-trigger:hover{border-color:var(--red);color:var(--red)}
+
+/* Header inside left panel */
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 0;flex-shrink:0;
+}
+.logo-text{font-size:22px;font-weight:900;color:var(--text)}
+.logo-text span{color:var(--red)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:4px}
+
+/* Confetti canvas */
+#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:999}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── LEFT PANEL ── -->
+  <div class="left">
+    <div class="panel-header">
+      <div class="logo-text">Spin<span>Pick</span></div>
+      <button class="saves-trigger" onclick="openSaves()">💾 Saved</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('add',this)">Add Names</button>
+      <button class="tab" onclick="showTab('entries',this)">Entries</button>
+      <button class="tab" onclick="showTab('history',this)">History</button>
+    </div>
+
+    <!-- ADD TAB -->
+    <div class="tab-panel active" id="tab-add">
+      <div class="add-panel">
+
+        <div>
+          <div class="label">Platform</div>
+          <div class="plat-row">
+            <button class="plat active" data-p="TikTok" onclick="selectPlat(this)"><div class="plat-dot" style="background:#ff2d55"></div>TikTok</button>
+            <button class="plat" data-p="YouTube" onclick="selectPlat(this)"><div class="plat-dot" style="background:#ff0000"></div>YouTube</button>
+            <button class="plat" data-p="Instagram" onclick="selectPlat(this)"><div class="plat-dot" style="background:#e1306c"></div>Instagram</button>
+            <button class="plat" data-p="Twitch" onclick="selectPlat(this)"><div class="plat-dot" style="background:#9146ff"></div>Twitch</button>
+            <button class="plat" data-p="Kick" onclick="selectPlat(this)"><div class="plat-dot" style="background:#53fc18"></div>Kick</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="label">Load from URL</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="urlInput" placeholder="Paste video URL..."/>
+            <button class="btn btn-ghost" id="loadBtn" onclick="fetchComments()" style="flex-shrink:0;width:72px">Load</button>
+          </div>
+          <div class="status" id="statusMsg" style="margin-top:6px"></div>
+        </div>
+
+        <div class="or">or type names</div>
+
+        <div>
+          <div class="label">Bulk add</div>
+          <textarea id="bulkInput" placeholder="Paste names — one per line or comma separated&#10;&#10;@user1, @user2&#10;@user3"></textarea>
+          <button class="btn btn-primary" onclick="addBulk()" style="margin-top:8px">Add all names</button>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-top:6px;text-align:center">Duplicates automatically increase that name's weight</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ENTRIES TAB -->
+    <div class="tab-panel" id="tab-entries">
+      <div class="entries-panel">
+        <div class="entries-search">
+          <input type="text" id="searchInput" placeholder="Search names..." oninput="renderEntries()"/>
+        </div>
+        <div class="entries-list" id="entriesList"></div>
+        <div class="entries-footer">
+          <div class="e-count" id="eCount">No entries</div>
+          <div class="footer-btns">
+            <button class="sm-btn" onclick="unmuteAll()">Unmute all</button>
+            <button class="sm-btn danger" onclick="clearAll()">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div class="tab-panel" id="tab-history">
+      <div class="history-panel">
+        <div class="hist-list" id="histList"></div>
+        <button class="hist-clear" onclick="clearHistory()">Clear history</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── RIGHT PANEL — WHEEL ── -->
+  <div class="right">
+    <div class="wheel-outer">
+      <canvas id="wc" width="600" height="600"></canvas>
+      <!-- Pointer tip at LEFT = points INTO wheel -->
+      <svg class="ptr" width="52" height="48" viewBox="0 0 52 48" fill="none">
+        <filter id="ps" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,.2)"/>
+        </filter>
+        <polygon points="0,24 44,8 34,24 44,40" fill="#FF6B6B" filter="url(#ps)" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="45" cy="24" r="8" fill="#FF9F43" stroke="white" stroke-width="2.5"/>
+      </svg>
+    </div>
+
+    <div class="winner-area">
+      <button class="spin-btn" id="spinBtn" onclick="spin()" disabled>SPIN!</button>
+
+      <div class="winner-box" id="winnerBox">
+        <div class="w-label">Winner</div>
+        <div class="w-name placeholder" id="winnerName">Spin the wheel to pick a winner</div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-ghost" onclick="removeWinner()">Remove winner</button>
+        <button class="btn btn-ghost" onclick="spinAgain()">Spin again</button>
+        <button class="btn btn-ghost" onclick="saveWheel()">Save wheel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confetti -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- SAVES MODAL -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeSaves()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">💾 Saved Wheels</div>
+      <button class="iBtn del" onclick="closeSaves()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="saveNameInput" placeholder="Name this wheel..."/>
+      <button class="btn btn-primary" onclick="saveWheel()" style="width:auto;padding:0 16px;flex-shrink:0">Save</button>
+    </div>
+    <div class="save-list" id="saveList"></div>
+  </div>
+</div>
+
+<script>
+// ── Palette (bright, Tiny Decisions style) ────────────────────────
+const PAL = [
+  {fill:'#FF6B6B',text:'#fff'},{fill:'#FF9F43',text:'#fff'},
+  {fill:'#FECA57',text:'#333'},{fill:'#48DBAF',text:'#fff'},
+  {fill:'#54A0FF',text:'#fff'},{fill:'#A29BFE',text:'#fff'},
+  {fill:'#FD79A8',text:'#fff'},{fill:'#00CEC9',text:'#fff'},
+  {fill:'#6C5CE7',text:'#fff'},{fill:'#E17055',text:'#fff'},
+  {fill:'#00B894',text:'#fff'},{fill:'#FDCB6E',text:'#333'},
+];
+
+// ── State ─────────────────────────────────────────────────────────
+let entries  = [];   // {name, weight, muted}
+let history  = [];   // {name, colorIdx, at, totalActive}
+let angle    = 0;
+let spinning = false;
+let winner   = null;
+let platform = 'TikTok';
+
+const cv  = document.getElementById('wc');
+const ctx = cv.getContext('2d');
+const W=600, CX=300, CY=300, R=288;
+
+// ── Persistence ───────────────────────────────────────────────────
+function save(){
+  try{
+    localStorage.setItem('sp2_entries', JSON.stringify(entries));
+    localStorage.setItem('sp2_history', JSON.stringify(history));
+  }catch(e){}
+}
+function load(){
+  try{
+    const e=localStorage.getItem('sp2_entries'); if(e) entries=JSON.parse(e);
+    const h=localStorage.getItem('sp2_history'); if(h) history=JSON.parse(h);
+  }catch(e){}
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function showTab(name, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='entries') renderEntries();
+  if(name==='history') renderHistory();
+}
+
+// ── Platform ──────────────────────────────────────────────────────
+function selectPlat(btn){
+  document.querySelectorAll('.plat').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  platform=btn.dataset.p;
+  document.getElementById('urlInput').placeholder=`Paste ${platform} URL...`;
+}
+
+// ── Entries logic ─────────────────────────────────────────────────
+function activeEntries(){ return entries.filter(e=>!e.muted); }
+function totalWeight(arr){ return arr.reduce((s,e)=>s+e.weight,0); }
+
+function addName(raw){
+  const n=raw.trim().replace(/^@/,'');
+  if(!n||n.length<1) return false;
+  const ex=entries.find(e=>e.name.toLowerCase()===n.toLowerCase());
+  if(ex){ ex.weight++; }
+  else{ entries.push({name:n,weight:1,muted:false}); }
+  return true;
+}
+
+function addBulk(){
+  const raw=document.getElementById('bulkInput').value;
+  if(!raw.trim()) return;
+  const parts=raw.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  const before=entries.length;
+  parts.forEach(p=>addName(p));
+  document.getElementById('bulkInput').value='';
+  renderEntries();draw();save();
+  const added=entries.length-before;
+  if(added) setStatus(`Added ${added} name${added!==1?'s':''}!`,'ok');
+  showTab('entries',document.querySelectorAll('.tab')[1]);
+}
+
+function removeName(i){
+  if(winner&&entries[i]?.name===winner) winner=null;
+  entries.splice(i,1);
+  renderEntries();draw();updateWinner();save();
+}
+
+function toggleMute(i){
+  entries[i].muted=!entries[i].muted;
+  renderEntries();draw();save();
+  updateSpinBtn();
+}
+
+function adjustWeight(i,d){
+  entries[i].weight=Math.max(1,entries[i].weight+d);
+  renderEntries();draw();save();
+}
+
+function unmuteAll(){
+  entries.forEach(e=>e.muted=false);
+  renderEntries();draw();save();updateSpinBtn();
+}
+
+function clearAll(){
+  if(!entries.length) return;
+  if(!confirm('Clear all entries?')) return;
+  entries=[];winner=null;
+  renderEntries();draw();updateWinner();save();
+}
+
+function updateSpinBtn(){
+  document.getElementById('spinBtn').disabled = activeEntries().length < 2;
+}
+
+// ── Render entries ────────────────────────────────────────────────
+function renderEntries(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const el=document.getElementById('entriesList');
+  if(!entries.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px;font-weight:700">No entries yet — add names in the Add Names tab</div>`;
+    document.getElementById('eCount').innerHTML='No entries';
+    updateSpinBtn(); return;
+  }
+  const filtered=entries.map((e,i)=>({...e,i})).filter(e=>!q||e.name.toLowerCase().includes(q));
+  el.innerHTML=filtered.map(e=>{
+    const c=PAL[e.i%PAL.length];
+    const wc=e.weight>=5?'w3':e.weight>=3?'w2':'';
+    return `<div class="entry${e.muted?' muted-entry':''}">
+      <div class="entry-swatch" style="background:${e.muted?'#ccc':c.fill}"></div>
+      <div class="entry-name" title="${e.name}">${e.name}</div>
+      <div class="entry-weight ${wc}">${e.weight}×</div>
+      <div class="entry-acts">
+        <button class="iBtn" onclick="adjustWeight(${e.i},1)" title="Increase weight">+</button>
+        <button class="iBtn" onclick="adjustWeight(${e.i},-1)" title="Decrease weight">−</button>
+        <button class="iBtn mute-btn${e.muted?' active':''}" onclick="toggleMute(${e.i})" title="${e.muted?'Unmute':'Mute — skip this name'}">
+          ${e.muted?'👁':'🚫'}
+        </button>
+        <button class="iBtn del" onclick="removeName(${e.i})" title="Remove">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  const active=activeEntries();
+  const muted=entries.filter(e=>e.muted).length;
+  document.getElementById('eCount').innerHTML=
+    `<span>${entries.length}</span> name${entries.length!==1?'s':''}${muted?` · <span style="color:var(--muted)">${muted} muted</span>`:''}`;
+  updateSpinBtn();
+}
+
+// ── History ───────────────────────────────────────────────────────
+function renderHistory(){
+  const el=document.getElementById('histList');
+  if(!history.length){
+    el.innerHTML=`<div class="hist-empty"><div class="big">🏆</div>No winners yet.<br>Spin the wheel to get started!</div>`;
+    return;
+  }
+  el.innerHTML=history.map((h,i)=>{
+    const c=PAL[h.colorIdx%PAL.length];
+    const dt=new Date(h.at);
+    const dateStr=dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return `<div class="hist-item">
+      <div class="hist-num${i===0?' gold':''}">${i+1}</div>
+      <div class="hist-info">
+        <div class="hist-name">${h.name}</div>
+        <div class="hist-meta">${h.totalActive} entries · ${dateStr}</div>
+      </div>
+      <div class="hist-swatch" style="background:${c.fill}"></div>
+    </div>`;
+  }).join('');
+}
+
+function clearHistory(){
+  if(!history.length) return;
+  if(!confirm('Clear winner history?')) return;
+  history=[];renderHistory();save();
+}
+
+// ── Draw wheel ────────────────────────────────────────────────────
+function draw(){
+  ctx.clearRect(0,0,W,W);
+  const active=activeEntries();
+  const total=totalWeight(active);
+
+  if(!entries.length){
+    // Empty state circle
+    ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+    ctx.fillStyle='#EEF0F8';ctx.fill();
+    ctx.strokeStyle='#DDE0EC';ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle='#9B9BB4';ctx.font='700 17px Nunito,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Add names to spin!',CX,CY);
+    drawHub();return;
+  }
+
+  if(!active.length){
+    ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+    ctx.fillStyle='#EEF0F8';ctx.fill();
+    ctx.fillStyle='#9B9BB4';ctx.font='700 15px Nunito,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('All names are muted',CX,CY);
+    drawHub();return;
+  }
+
+  // Draw muted entries as thin grey rings at back
+  let cur=angle;
+  const allTotal=totalWeight(entries);
+  entries.forEach((e,i)=>{
+    const slice=(e.weight/allTotal)*Math.PI*2;
+    if(e.muted){
+      ctx.beginPath();ctx.moveTo(CX,CY);
+      ctx.arc(CX,CY,R,cur,cur+slice);ctx.closePath();
+      ctx.fillStyle='#E8E8F0';ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    }
+    cur+=slice;
+  });
+
+  // Draw active entries on top — sized by their weight relative to active total
+  // We need to recalculate positions for active-only
+  let activeCur=angle;
+  // First pass: build positions including muted gaps
+  cur=angle;
+  entries.forEach((e,i)=>{
+    const slice=(e.weight/allTotal)*Math.PI*2;
+    if(!e.muted){
+      // Scale this slice to fill the wheel based on active weight proportion
+      const activeSlice=(e.weight/total)*Math.PI*2;
+      // Use the active-proportional position
+    }
+    cur+=slice;
+  });
+
+  // Simpler: just draw active entries proportionally (muted = invisible thin lines)
+  cur=angle;
+  const activeOnly=active;
+  activeOnly.forEach((e,i)=>{
+    const slice=(e.weight/total)*Math.PI*2;
+    const end=cur+slice;
+    const c=PAL[entries.indexOf(e)%PAL.length];
+    ctx.beginPath();ctx.moveTo(CX,CY);ctx.arc(CX,CY,R,cur,end);ctx.closePath();
+    ctx.fillStyle=c.fill;ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
+    if(slice>0.07){
+      ctx.save();ctx.translate(CX,CY);ctx.rotate(cur+slice/2);
+      ctx.textAlign='right';
+      const fs=activeOnly.length>24?10:activeOnly.length>14?12:14;
+      ctx.font=`800 ${fs}px Nunito,sans-serif`;
+      const lbl=e.name.length>15?e.name.slice(0,14)+'…':e.name;
+      ctx.fillStyle=c.text;ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=3;
+      ctx.fillText(lbl,R-14,0);
+      if(e.weight>1&&slice>0.2){
+        ctx.font=`700 ${fs-2}px Nunito,sans-serif`;ctx.globalAlpha=.75;
+        ctx.fillText(`${e.weight}×`,R-14,fs+2);ctx.globalAlpha=1;
+      }
+      ctx.restore();
+    }
+    cur=end;
+  });
+
+  // Outer ring
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=4;ctx.stroke();
+  drawHub();
+}
+
+function drawHub(){
+  ctx.beginPath();ctx.arc(CX,CY,40,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();
+  ctx.strokeStyle='#E8E8F0';ctx.lineWidth=3;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,CY,24,0,Math.PI*2);
+  ctx.fillStyle='#FF6B6B';ctx.fill();
+  ctx.beginPath();ctx.arc(CX,CY,11,0,Math.PI*2);
+  ctx.fillStyle='#FF9F43';ctx.fill();
+}
+
+// ── Spin ──────────────────────────────────────────────────────────
+function spin(){
+  const active=activeEntries();
+  if(spinning||active.length<2) return;
+  spinning=true;winner=null;updateWinner();
+  document.getElementById('spinBtn').disabled=true;
+
+  const total=totalWeight(active);
+  const rand=Math.random()*total;
+  let cum=0,winEntry=active[active.length-1];
+  for(const e of active){ cum+=e.weight; if(rand<cum){winEntry=e;break;} }
+
+  // Find this entry's angle position
+  let startA=angle;
+  const allTotal=totalWeight(entries);
+  // Build a simplified wheel: only active entries, proportional
+  const activeIdx=active.indexOf(winEntry);
+  let winStart=0;
+  for(let i=0;i<activeIdx;i++) winStart+=(active[i].weight/total)*Math.PI*2;
+  const winMid=winStart+(winEntry.weight/total)*Math.PI*2/2;
+
+  const spins=Math.PI*2*(10+Math.random()*4);
+  const target=spins-(winMid)-angle+Math.PI/2;
+  const dur=4200+Math.random()*1400, t0=performance.now(), a0=angle;
+
+  function frame(now){
+    const p=Math.min((now-t0)/dur,1), ease=1-Math.pow(1-p,4.5);
+    angle=a0+target*ease; draw();
+    if(p<1){ requestAnimationFrame(frame); return; }
+
+    // Winner!
+    spinning=false;
+    winner=winEntry.name;
+    const colorIdx=entries.findIndex(e=>e.name===winner);
+
+    // Add to history
+    history.unshift({name:winner,colorIdx,at:Date.now(),totalActive:active.length});
+    if(history.length>100) history=history.slice(0,100);
+    save();
+
+    // Update UI
+    const wb=document.getElementById('winnerBox');
+    wb.className='winner-box lit';
+    const wn=document.getElementById('winnerName');
+    wn.className='w-name'; wn.textContent=winner;
+    document.getElementById('spinBtn').disabled=false;
+
+    // 🎉 Confetti
+    launchConfetti(PAL[colorIdx%PAL.length].fill);
+  }
+  requestAnimationFrame(frame);
+}
+
+function removeWinner(){
+  if(!winner) return;
+  const i=entries.findIndex(e=>e.name===winner);
+  if(i>-1) entries.splice(i,1);
+  winner=null;renderEntries();draw();updateWinner();save();
+}
+
+function spinAgain(){ winner=null;updateWinner();if(activeEntries().length>=2)spin(); }
+
+function updateWinner(){
+  if(!winner){
+    document.getElementById('winnerBox').className='winner-box';
+    const n=document.getElementById('winnerName');
+    n.className='w-name placeholder';n.textContent='Spin the wheel to pick a winner';
+  }
+}
+
+// ── Status ────────────────────────────────────────────────────────
+function setStatus(msg,type=''){
+  const el=document.getElementById('statusMsg');
+  el.textContent=msg;el.className='status'+(type?' '+type:'');
+}
+
+// ── Fetch comments ────────────────────────────────────────────────
+async function fetchComments(){
+  const url=document.getElementById('urlInput').value.trim();
+  if(!url){setStatus('Paste a URL first.','err');return;}
+  const btn=document.getElementById('loadBtn');
+  btn.disabled=true;btn.textContent='...';
+  setStatus(`Loading ${platform} comments...`,'loading');
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:`Extract commenter usernames from a ${platform} post. Use web_search to find the video and its comments. Return ONLY a JSON array of username strings (no @), max 50. If none found return []. Return ONLY valid JSON, nothing else.`,
+        messages:[{role:'user',content:`Get commenters from this ${platform} URL: ${url}`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    let parsed=[];
+    try{parsed=JSON.parse(text.replace(/```json|```/g,'').trim());}
+    catch{const m=text.match(/\[[\s\S]*?\]/);if(m)parsed=JSON.parse(m[0]);}
+    if(Array.isArray(parsed)&&parsed.length){
+      const before=entries.length;
+      parsed.forEach(n=>{if(typeof n==='string')addName(n);});
+      draw();save();
+      setStatus(`Loaded ${entries.length-before} names!`,'ok');
+      showTab('entries',document.querySelectorAll('.tab')[1]);
+    } else {
+      setStatus('No comments found. Try adding manually.','err');
+    }
+  }catch(e){setStatus('Error. Check the URL.','err');}
+  btn.disabled=false;btn.textContent='Load';
+}
+
+// ── Saves ─────────────────────────────────────────────────────────
+function getSaves(){try{return JSON.parse(localStorage.getItem('sp2_saves')||'{}');}catch{return {};}}
+
+function saveWheel(){
+  if(!entries.length){setStatus('Add names first.','err');return;}
+  const name=document.getElementById('saveNameInput').value.trim()||
+    `Wheel ${new Date().toLocaleDateString()}`;
+  const s=getSaves();
+  s[name]={entries:entries.map(e=>({...e})),savedAt:Date.now()};
+  localStorage.setItem('sp2_saves',JSON.stringify(s));
+  document.getElementById('saveNameInput').value='';
+  renderSaves();setStatus(`Saved "${name}"!`,'ok');
+}
+
+function renderSaves(){
+  const s=getSaves(),keys=Object.keys(s),el=document.getElementById('saveList');
+  if(!keys.length){el.innerHTML=`<div class="modal-empty">No saved wheels yet</div>`;return;}
+  el.innerHTML=keys.map((k,i)=>`
+    <div class="save-item" data-idx="${i}" onclick="loadSave(this.dataset.idx)">
+      <div class="save-info">
+        <div class="save-name2">${k}</div>
+        <div class="save-meta2">${s[k].entries.length} names · ${new Date(s[k].savedAt).toLocaleDateString()}</div>
+      </div>
+      <button class="iBtn del" data-idx="${i}" onclick="event.stopPropagation();deleteSave(this.dataset.idx)">✕</button>
+    </div>`).join('');
+  // Store key order so loadSave/deleteSave can look up by index
+  window._saveKeys=keys;
+}
+
+function loadSave(idx){
+  const k=window._saveKeys[idx];
+  const s=getSaves();
+  if(s[k]){entries=s[k].entries.map(e=>({...e}));renderEntries();draw();closeSaves();setStatus(`Loaded "${k}"!`,'ok');}
+}
+
+function deleteSave(idx){
+  const k=window._saveKeys[idx];
+  const s=getSaves();delete s[k];
+  localStorage.setItem('sp2_saves',JSON.stringify(s));renderSaves();
+}
+
+function openSaves(){renderSaves();document.getElementById('modalBg').classList.add('open');}
+function closeSaves(){document.getElementById('modalBg').classList.remove('open');}
+
+// ── Confetti ──────────────────────────────────────────────────────
+function launchConfetti(mainColor){
+  const canvas=document.getElementById('confettiCanvas');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const ctx2=canvas.getContext('2d');
+  const pieces=[];
+  const colors=[mainColor,'#FF6B6B','#FECA57','#48DBAF','#54A0FF','#A29BFE','#FD79A8'];
+  for(let i=0;i<120;i++){
+    pieces.push({
+      x:Math.random()*canvas.width,y:-10,
+      vx:(Math.random()-0.5)*6,vy:Math.random()*4+2,
+      w:Math.random()*10+5,h:Math.random()*5+3,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      r:Math.random()*Math.PI*2,vr:(Math.random()-0.5)*0.2,
+      life:1
+    });
+  }
+  let frame=0;
+  function tick(){
+    ctx2.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.r+=p.vr;p.life-=0.012;
+      ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.r);
+      ctx2.globalAlpha=Math.max(0,p.life);
+      ctx2.fillStyle=p.color;
+      ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx2.restore();
+    });
+    frame++;
+    if(frame<140) requestAnimationFrame(tick);
+    else ctx2.clearRect(0,0,canvas.width,canvas.height);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+load();
+renderEntries();
+renderHistory();
+draw();
+</script>
+</body>
+</html>
